@@ -119,6 +119,8 @@ int main()
 
 	if (isDSiMode() /*|| ((REG_SCFG_EXT & BIT(17)) && (REG_SCFG_EXT & BIT(18)))*/)
 	{
+		fifoSendValue32(FIFO_USER_04, i2cReadRegister(0x4A, 0));
+
 		if(__DeviceList)
 			memmove((vu8*)0x02300024, __DeviceList, sizeof(DeviceList));
 		else

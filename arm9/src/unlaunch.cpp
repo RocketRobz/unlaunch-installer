@@ -4,6 +4,7 @@
 #include "tonccpy.h"
 #include "unlaunch.h"
 
+#include <nds/fifocommon.h>
 #include <nds/sha1.h>
 
 #include <algorithm>
@@ -490,6 +491,16 @@ static bool applyBinaryPatch(const char* path)
 static bool patchUnlaunchInstaller(bool disableAllPatches, const char* splashSoundBinaryPatchPath, std::span<uint8_t> customBackground)
 {
 	tonccpy(unlaunchInstallerBuffer, ogUnlaunchInstallerBuffer, sizeof(unlaunchInstallerBuffer));
+	const u8 i2cVer = fifoGetValue32(FIFO_USER_04);
+	if ((i2cVer == 0 || i2cVer == 0xFF) && installerVersion == v2_0) {
+		// Patch out I2C checks in order for Unlaunch to work with bricked I2C chip
+		extern u32 unlaunchI2CPatch[];
+
+		toncset32((unlaunchInstallerBuffer + 520) + 0x11D30, 0xEA00001C, 1); // Branch to unlaunchI2CPatch
+		tonccpy((unlaunchInstallerBuffer + 520) + 0x11DA8, unlaunchI2CPatch, 9*4);
+		toncset32((unlaunchInstallerBuffer + 520) + 0x2A12C, 0xE12FFF1E, 1);
+		toncset32((unlaunchInstallerBuffer + 520) + 0x2A16C, 0xE12FFF1E, 1);
+	}
     if (splashSoundBinaryPatchPath)
     {
         iprintf("Applying splash and sound patch\n");
