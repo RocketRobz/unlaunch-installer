@@ -390,25 +390,16 @@ static bool readUnlaunchInstaller(std::string_view path)
 		return false;
 	}
 
-	int toRead = unlaunchInstallerSize;
-	auto* buff = unlaunchInstallerBuffer;
 	// Pad the installer with 520 bytes, those being the size of a valid tmd
-	buff += 520;
+	auto readAmount = readFileAll(unlaunchInstaller, unlaunchInstallerBuffer + 520, sizeof(unlaunchInstallerBuffer) - 520);
 
-	size_t n = 0;
-	while (toRead != 0 && (n = fread(buff, sizeof(uint8_t), toRead, unlaunchInstaller)) > 0)
+	fclose(unlaunchInstaller);
+
+	if(readAmount != unlaunchInstallerSize)
 	{
-		toRead -= n;
-		buff += n;
-	}
-	if (toRead != 0 || ferror(unlaunchInstaller))
-	{
-		fclose(unlaunchInstaller);
 		messageBox("\x1B[31mError:\x1B[33m Failed read unlaunch installer\n");
 		return false;
 	}
-
-	fclose(unlaunchInstaller);	
 	return true;
 }
 
