@@ -12,6 +12,7 @@ extern "C" {
 bool fileExists(char const* path);
 int copyFile(char const* src, char const* dst);
 int copyFilePart(char const* src, u32 offset, u32 size, char const* dst);
+unsigned long long readFileAll(FILE* f, void* outbuff, size_t len);
 unsigned long long getFileSize(FILE* f);
 unsigned long long getFileSizePath(char const* path);
 bool toggleFileReadOnly(const char* path, bool readOnly);

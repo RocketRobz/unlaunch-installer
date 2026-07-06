@@ -129,6 +129,28 @@ int copyFilePart(char const* src, u32 offset, u32 size, char const* dst)
 	return 0;
 }
 
+unsigned long long readFileAll(FILE* f, void* outbuff, size_t len)
+{
+	unsigned long long size = getFileSize(f);
+	if(size > len)
+		return 0;
+	uint8_t* buff = (uint8_t*)outbuff;
+	size_t toRead = len;
+
+	size_t n = 0;
+	while (toRead != 0 && (n = fread(buff, sizeof(uint8_t), toRead, f)) > 0)
+	{
+		toRead -= n;
+		buff += n;
+	}
+	if (toRead != 0 || ferror(f))
+	{
+		return 0;
+	}
+
+	return len;
+}
+
 unsigned long long getFileSize(FILE* f)
 {
 	if (!f) return 0;
