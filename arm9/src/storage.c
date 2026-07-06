@@ -200,12 +200,12 @@ bool writeToFile(FILE* fd, const char* buffer, size_t size)
 bool calculateFileSha1Offset(FILE* f, void* digest, size_t offset)
 {
 	fseek(f, offset, SEEK_SET);
-	
+
 	swiSHA1context_t ctx;
 	ctx.sha_block = 0; //this is weird but it has to be done
 	swiSHA1Init(&ctx);
-	
-	char buffer[512];	
+
+	char buffer[512];
 	size_t n = 0;
 	while ((n = fread(buffer, sizeof(char), sizeof(buffer), f)) > 0)
 	{
@@ -225,7 +225,7 @@ bool calculateFileSha1PathOffset(const char* path, void* digest, size_t offset)
 	if (!targetFile)
 	{
 		return false;
-	}	
+	}
 	bool res = calculateFileSha1Offset(targetFile, digest, offset);
 	fclose(targetFile);
 	return res;
@@ -235,10 +235,10 @@ bool safeCreateDir(const char* path)
 {
 	if (((mkdir(path, 0777) == 0) || errno == EEXIST))
 		return true;
-	
+
 	char errorStr[512];
 	sprintf(errorStr, "\x1B[31mError:\x1B[33m Failed to create directory (%s)\n", path);
-	
+
 	messageBox(errorStr);
 	return false;
 }

@@ -20,11 +20,11 @@ bool writeToFile(FILE* fd, const char* buffer, size_t size);
 bool calculateFileSha1Offset(FILE* f, void* digest, size_t offset);
 bool calculateFileSha1PathOffset(const char* path, void* digest, size_t offset);
 static inline bool calculateFileSha1(FILE* f, void* digest) {
-    return calculateFileSha1Offset(f, digest, 0);
+	return calculateFileSha1Offset(f, digest, 0);
 }
 
 static inline bool calculateFileSha1Path(const char* path, void* digest) {
-    return calculateFileSha1PathOffset(path, digest, 0);
+	return calculateFileSha1PathOffset(path, digest, 0);
 }
 
 //Directories

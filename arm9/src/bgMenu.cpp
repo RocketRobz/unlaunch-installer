@@ -19,7 +19,7 @@ static const auto& getBackgroundList()
 {
 	static auto bgs = []{
 		std::vector<std::pair<std::string,std::string>> bgs;
-		
+
 		for(const auto* bgstr : {"nitro:/backgrounds/", "sd:/backgrounds/"}) {
 			auto* pdir = opendir(bgstr);
 			if(!pdir) continue;
@@ -55,12 +55,12 @@ std::optional<std::span<uint8_t>> backgroundMenu()
 	auto mSptr = std::shared_ptr<Menu>(newMenu(), freeMenu);
 	auto* m = mSptr.get();
 	setMenuHeader(m, "BACKGROUNDS");
-	
+
 	const auto& bgs = getBackgroundList();
-	
+
 	for(const auto& [bgName, bgPath] : bgs)
 	{
-		addMenuItem(m, bgName.data(), nullptr, true, false);	
+		addMenuItem(m, bgName.data(), nullptr, true, false);
 	}
 	addMenuItem(m, "Default", nullptr, true, false);
 	// addMenuItem(m, "Cancel", nullptr, true, false);
