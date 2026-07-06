@@ -101,7 +101,7 @@ static void setupScreens()
 
 static int mainMenu(const consoleInfo& info, int cursor)
 {
-    const auto tidPatchesSupported = (foundUnlaunchInstallerVersion == v2_0) && isLauncherVersionSupported;
+	const auto isInstallingRealUnlaunch = (foundUnlaunchInstallerVersion == v2_0) && isLauncherVersionSupported;
 	//top screen
 	clearScreen(&topScreen);
 
@@ -126,9 +126,9 @@ static int mainMenu(const consoleInfo& info, int cursor)
         return std::make_pair("Uninstall unlaunch", "Uninstall unlaunch no backup");
     }();
 
-    char soundPatchesStr[64], tidPatchesStr[32], installUnlaunchStr[32];
-    sprintf(tidPatchesStr, "Disable all patches: %s",
-                        disableAllPatches ? "On" : "Off");
+	char soundPatchesStr[64], tidPatchesStr[32], installUnlaunchStr[32];
+	sprintf(tidPatchesStr, "Disable all patches: %s",
+						disableAllPatches ? "On" : "Off");
 	sprintf(soundPatchesStr, "Enable sound and splash: %s",
 							enableSoundAndSplash ? "On" : "Off");
 	if(foundUnlaunchInstallerVersion != INVALID)
@@ -140,9 +140,9 @@ static int mainMenu(const consoleInfo& info, int cursor)
 		strcpy(installUnlaunchStr, "Install unlaunch");
 	}
     addMenuItem(m, restore_string, NULL, !info.isStockTmd() && isLauncherVersionSupported, false);
-	addMenuItem(m, "Custom background", NULL, foundUnlaunchInstallerVersion != INVALID && isLauncherVersionSupported, true);
-	addMenuItem(m, soundPatchesStr, NULL, foundUnlaunchInstallerVersion == v2_0 && !disableAllPatches && splashSoundBinaryPatchPath != NULL && isLauncherVersionSupported, false);
-    addMenuItem(m, installUnlaunchStr, NULL, foundUnlaunchInstallerVersion != INVALID && info.isStockTmd() && isLauncherVersionSupported, false);
+	addMenuItem(m, "Custom background", NULL, isInstallingRealUnlaunch, true);
+	addMenuItem(m, soundPatchesStr, NULL, isInstallingRealUnlaunch && !disableAllPatches && splashSoundBinaryPatchPath != NULL, false);
+	addMenuItem(m, installUnlaunchStr, NULL, foundUnlaunchInstallerVersion != INVALID && info.isStockTmd() && isLauncherVersionSupported, false);
 	addMenuItem(m, "Exit", NULL, true, false);
 	if(!isLauncherVersionSupported)
     {
@@ -152,7 +152,7 @@ static int mainMenu(const consoleInfo& info, int cursor)
     {
         addMenuItem(m, restore_string_no_backup, NULL, !info.isStockTmd(), false);
 		addMenuItem(m, "Write nocash footer", NULL, info.needsNocashFooterToBeWritten, false);
-        addMenuItem(m, tidPatchesStr, NULL, tidPatchesSupported, false);
+		addMenuItem(m, tidPatchesStr, NULL, isInstallingRealUnlaunch, false);
 	}
 
 	m->cursor = cursor;
@@ -197,10 +197,10 @@ static int mainMenu(const consoleInfo& info, int cursor)
 			// Enabled by default when unsupported
 			if(isLauncherVersionSupported)
 			{
-                addMenuItem(m, "Uninstall unlaunch no backup", NULL, !info.isStockTmd(), false);
+				addMenuItem(m, restore_string_no_backup, NULL, !info.isStockTmd(), false);
 			}
             addMenuItem(m, "Write nocash footer", NULL, info.needsNocashFooterToBeWritten, false);
-            addMenuItem(m, tidPatchesStr, NULL, tidPatchesSupported, false);
+			addMenuItem(m, tidPatchesStr, NULL, isInstallingRealUnlaunch, false);
 		}
 	}
 
@@ -269,7 +269,7 @@ void setup() {
                                "If you install it, Unlaunch\n"
                                "won't boot as long as this SD\n"
                                "card is inserted.", clusterSize / 1024).data());
-    }
+	}
 }
 
 void checkStage2Supported() {
@@ -362,6 +362,12 @@ void waitForBatteryChargedEnough() {
 }
 
 void loadUnlaunchInstaller() {
+	if(fileExists("sd:/not-unlaunch.dsi"))
+	{
+		foundUnlaunchInstallerVersion = loadUnlaunchLikeHomebrew("sd:/not-unlaunch.dsi");
+		if(foundUnlaunchInstallerVersion != INVALID)
+			return;
+	}
     if (fileExists("sd:/unlaunch.dsi"))
     {
         foundUnlaunchInstallerVersion = loadUnlaunchInstaller("sd:/unlaunch.dsi");
@@ -629,7 +635,7 @@ void install(consoleInfo& info) {
         return;
     }
 	nand_WriteProtect(false);
-    if(installUnlaunch(info, disableAllPatches,
+	if(installUnlaunch(info, disableAllPatches,
                         enableSoundAndSplash ? splashSoundBinaryPatchPath : NULL,
                         customBgSpan))
     {
@@ -683,24 +689,32 @@ void doMainMenu(consoleInfo& info) {
         }
         break;
 
-        case MAIN_MENU_TID_PATCHES:
-            if(!isLauncherVersionSupported)
-            {
-                break;
-            }
-            if(advancedOptionsUnlocked && (foundUnlaunchInstallerVersion == v2_0)) {
-                disableAllPatches = !disableAllPatches;
-            }
-            break;
+		case MAIN_MENU_TID_PATCHES:
+			if(!advancedOptionsUnlocked)
+			{
+				break;
+			}
+			if(!isLauncherVersionSupported || foundUnlaunchInstallerVersion != v2_0)
+			{
+				break;
+			}
+			disableAllPatches = !disableAllPatches;
+			break;
 
-        case MAIN_MENU_SOUND_SPLASH_PATCHES:
-            if(!isLauncherVersionSupported)
+		case MAIN_MENU_SOUND_SPLASH_PATCHES:
+			if(!isLauncherVersionSupported || foundUnlaunchInstallerVersion != v2_0)
             {
                 break;
-            }
-            if(foundUnlaunchInstallerVersion == v2_0 && !disableAllPatches && splashSoundBinaryPatchPath != NULL) {
-                enableSoundAndSplash = !enableSoundAndSplash;
-            }
+			}
+			if(disableAllPatches)
+			{
+				break;
+			}
+			if(splashSoundBinaryPatchPath == nullptr)
+			{
+				break;
+			}
+			enableSoundAndSplash = !enableSoundAndSplash;
             break;
 
         case MAIN_MENU_SAFE_UNLAUNCH_INSTALL:

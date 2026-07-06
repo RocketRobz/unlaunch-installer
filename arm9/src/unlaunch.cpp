@@ -481,26 +481,26 @@ static bool applyBinaryPatch(const char* path)
 static bool patchUnlaunchInstaller(bool disableAllPatches, const char* splashSoundBinaryPatchPath, std::span<uint8_t> customBackground)
 {
 	tonccpy(unlaunchInstallerBuffer, ogUnlaunchInstallerBuffer, sizeof(unlaunchInstallerBuffer));
-    if (splashSoundBinaryPatchPath)
-    {
+	if (splashSoundBinaryPatchPath)
+	{
 		printf("Applying splash and sound patch\n");
-        if(!applyBinaryPatch(splashSoundBinaryPatchPath))
-        {
-            return false;
-        }
-    } else {
-        if(disableAllPatches) {
-            // change launcher TID from ANH to SAN so that unlaunch doesn't realize it's booting the launcher
-            auto patchOffset = blockAllPatchesOffset[installerVersion];
-            const char newID[]{'S','A','N'};
-            memcpy((unlaunchInstallerBuffer + 520) + patchOffset, newID, 3);
-        }
+		if(!applyBinaryPatch(splashSoundBinaryPatchPath))
+		{
+			return false;
+		}
+	} else {
+		if(disableAllPatches) {
+			// change launcher TID from ANH to SAN so that unlaunch doesn't realize it's booting the launcher
+			auto patchOffset = blockAllPatchesOffset[installerVersion];
+			const char newID[]{'S','A','N'};
+			memcpy((unlaunchInstallerBuffer + 520) + patchOffset, newID, 3);
+		}
 		printf("Applying Device list patch\n");
-        if(!applyBinaryPatch("nitro:/fix-devicelist-patch.bin"))
-        {
-            return false;
-        }
-    }
+		if(!applyBinaryPatch("nitro:/fix-devicelist-patch.bin"))
+		{
+			return false;
+		}
+	}
 	if(!patchCustomBackground(customBackground))
 	{
 		return false;
@@ -518,8 +518,38 @@ UNLAUNCH_VERSION loadUnlaunchInstaller(std::string_view path)
 	return INVALID;
 }
 
+UNLAUNCH_VERSION loadUnlaunchLikeHomebrew(std::string_view path)
+{
+	FILE* installer = fopen(path.data(), "rb");
+	if (!installer)
+	{
+		messageBox(std::format("\x1B[31mError:\x1B[33m Failed to open {}\n", path).data());
+		return INVALID;
+	}
+
+	unlaunchInstallerSize = getFileSize(installer);
+	if(unlaunchInstallerSize > sizeof(unlaunchInstallerBuffer) - 520)
+	{
+		messageBox(std::format("\x1B[31mError:\x1B[33m File too big {}\n", path).data());
+		return INVALID;
+	}
+
+	auto readAmount = readFileAll(installer, unlaunchInstallerBuffer + 520, sizeof(unlaunchInstallerBuffer) - 520);
+
+	fclose(installer);
+
+	if(readAmount != unlaunchInstallerSize)
+	{
+		messageBox(std::format("\x1B[31mError:\x1B[33m Failed to read {}\n", path).data());
+		return INVALID;
+	}
+	tonccpy(ogUnlaunchInstallerBuffer, unlaunchInstallerBuffer, sizeof(unlaunchInstallerBuffer));
+	return CUSTOM;
+}
+
 std::array unlaunchVersionStrings{
 	"v2.0",
+	";)",
 	"INVALID",
 };
 
@@ -532,7 +562,10 @@ const char* getUnlaunchVersionString(UNLAUNCH_VERSION version)
 
 bool installUnlaunch(const consoleInfo& info, bool disableAllPatches, const char* splashSoundBinaryPatchPath, std::span<uint8_t> customBackground)
 {
-	if (installerVersion == INVALID || !patchUnlaunchInstaller(disableAllPatches, splashSoundBinaryPatchPath, customBackground))
+	if (installerVersion == INVALID)
+		return false;
+
+	if (installerVersion != CUSTOM && !patchUnlaunchInstaller(disableAllPatches, splashSoundBinaryPatchPath, customBackground))
 		return false;
 
 	// Treat protos differently

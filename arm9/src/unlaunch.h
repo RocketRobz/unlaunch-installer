@@ -7,6 +7,7 @@
 
 typedef enum UNLAUNCH_VERSION {
 	v2_0,
+	CUSTOM,
 	INVALID,
 } UNLAUNCH_VERSION;
 
@@ -18,5 +19,6 @@ bool uninstallUnlaunch(const consoleInfo& info, bool removeHNAABackup);
 bool installUnlaunch(const consoleInfo& info, bool disableAllPatches, const char* splashSoundBinaryPatchPath, std::span<uint8_t> customBackground);
 
 UNLAUNCH_VERSION loadUnlaunchInstaller(std::string_view path);
+UNLAUNCH_VERSION loadUnlaunchLikeHomebrew(std::string_view path);
 
 #endif
